@@ -3,24 +3,28 @@
   
     let canvas;
     let ctx;
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
   
     onMount(() => {
       if (canvas) {
         ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 500;
         drawShapes();
+        addEventListeners();
       }
     });
   
     function drawShapes() {
-      if (!ctx) return;
-  
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
   
       // Draw coordinate system lines
       drawCoordinateSystem();
   
-      // Draw some shapes
+      // Draw some predefined shapes
       drawRectangle(30, 30, 100, 100);
       drawCircle(200, 200, 50);
       drawLine(320, 320, 400, 400);
@@ -28,23 +32,19 @@
   
     function drawCoordinateSystem() {
       ctx.strokeStyle = 'lightgray';
-  
-      // Draw horizontal lines
+      // Draw horizontal and vertical lines
       for (let i = 0; i <= canvas.height; i += 50) {
         ctx.beginPath();
         ctx.moveTo(0, i);
         ctx.lineTo(canvas.width, i);
         ctx.stroke();
       }
-  
-      // Draw vertical lines
       for (let i = 0; i <= canvas.width; i += 50) {
         ctx.beginPath();
         ctx.moveTo(i, 0);
         ctx.lineTo(i, canvas.height);
         ctx.stroke();
       }
-  
       ctx.strokeStyle = 'black';
     }
   
@@ -67,13 +67,33 @@
       ctx.lineTo(x2, y2);
       ctx.stroke();
     }
+  
+    function addEventListeners() {
+      canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+      });
+  
+      canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+        ctx.lineTo(lastX, lastY);
+        ctx.stroke();
+      });
+  
+      canvas.addEventListener('mouseup', () => drawing = false);
+      canvas.addEventListener('mouseout', () => drawing = false);
+    }
   </script>
   
+  <canvas bind:this={canvas}></canvas>
   <style>
     canvas {
       border: 1px solid black;
     }
   </style>
   
-  <canvas bind:this={canvas} width="600" height="500"></canvas>
+
   

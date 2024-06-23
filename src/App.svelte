@@ -1,8 +1,8 @@
 <script>
 	import Canvas from "./Canvas.svelte";
-    import Canvas2 from "./Canvas2.svelte";
 	import Card from "./Card.svelte";
 	import {setContext} from 'svelte';
+    import ImageCanvas from "./ImageCanvas.svelte";
 
 	let count = 0;
 
@@ -18,7 +18,10 @@
 
 	<h1>Canvas Drawing with Svelte</h1>
 	<Canvas />
-	<Canvas2 />
+	<!-- <Canvas2 /> -->
+
+	<h1>Canvas Image:</h1>
+	<ImageCanvas />
 </main>
 
 <style>
