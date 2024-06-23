@@ -6,6 +6,8 @@
     let drawing = false;
     let lastX = 0;
     let lastY = 0;
+    let color = 'black'; // Default drawing color
+    let brushSize = 5; // Default brush size
   
     onMount(() => {
       if (canvas) {
@@ -76,6 +78,8 @@
   
       canvas.addEventListener('mousemove', (e) => {
         if (!drawing) return;
+        ctx.lineWidth = brushSize;
+        ctx.strokeStyle = color;
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -86,14 +90,28 @@
       canvas.addEventListener('mouseup', () => drawing = false);
       canvas.addEventListener('mouseout', () => drawing = false);
     }
+  
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
   </script>
   
   <canvas bind:this={canvas}></canvas>
+  <button on:click={clearCanvas}>Clear</button>
+  <label>
+    Color:
+    <input type="color" bind:value={color}>
+  </label>
+  <label>
+    Brush Size:
+    <input type="range" min="1" max="20" bind:value={brushSize}>
+  </label>
   <style>
     canvas {
       border: 1px solid black;
     }
+    button, label {
+      margin-top: 10px;
+    }
   </style>
-  
-
   
