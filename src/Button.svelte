@@ -4,7 +4,7 @@ let incrementCount = getContext('incrementCount');
 </script>
 
 <button class="Button" on:click={incrementCount} >
-    increment Count
+    Increment Count
 </button>
 
 <style>
