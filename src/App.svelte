@@ -22,6 +22,8 @@
 
 	<h1>Canvas Image:</h1>
 	<ImageCanvas />
+
+
 </main>
 
 <style>
