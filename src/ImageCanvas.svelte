@@ -2,23 +2,14 @@
     import { onMount } from 'svelte';
 
     let canvas, context;
-    let offscreenCanvas = document.createElement('canvas');
-    let offscreenContext = offscreenCanvas.getContext('2d');
     let image = new Image();
-    let imageProperties = {
-        width: 0,
-        height: 0,
-        format: ''
-    };
+    let imageProperties = { width: 0, height: 0, format: '' };
     let rotation = 0;
     let scale = 1;
+    let bgColor = '#FFFFFF';
     let filter = '';
     let crop = {
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 100,
-        enabled: false
+        x: 0, y: 0, width: 100, height: 100, enabled: false
     };
 
     let history = [];
@@ -28,13 +19,7 @@
         if (historyIndex + 1 < history.length) {
             history.splice(historyIndex + 1);
         }
-        history.push(JSON.stringify({
-            imageSrc: image.src,
-            rotation,
-            scale,
-            filter,
-            crop: { ...crop }
-        }));
+        history.push(JSON.stringify({ imageSrc: image.src, rotation, scale, filter, crop, bgColor }));
         historyIndex++;
     }
 
@@ -58,14 +43,14 @@
         scale = state.scale;
         filter = state.filter;
         crop = { ...state.crop };
+        bgColor = state.bgColor;
         drawImage();
     }
 
     function loadImage(event) {
         const file = event.target.files[0];
         if (file) {
-            const imageUrl = URL.createObjectURL(file);
-            image.src = imageUrl;
+            image.src = URL.createObjectURL(file);
             image.onload = () => {
                 imageProperties.width = image.width;
                 imageProperties.height = image.height;
@@ -79,15 +64,12 @@
     }
 
     function drawImage() {
-        if (context && image) {
+        if (context) {
             context.clearRect(0, 0, canvas.width, canvas.height);
-            if (!crop.enabled) {
-                canvas.width = image.width * scale;
-                canvas.height = image.height * scale;
-            } else {
-                canvas.width = crop.width * scale;
-                canvas.height = crop.height * scale;
-            }
+            context.fillStyle = bgColor;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            canvas.width = image.width * scale;
+            canvas.height = image.height * scale;
             context.save();
             context.translate(canvas.width / 2, canvas.height / 2);
             context.rotate((Math.PI / 180) * rotation);
@@ -103,19 +85,24 @@
     }
 
     onMount(() => {
-        if (canvas) {
-            context = canvas.getContext('2d');
-        }
+        context = canvas.getContext('2d');
+        drawImage();
     });
 
-    function rotate(degrees) {
-        rotation += degrees;
+    function updateRotation(event) {
+        rotation = parseInt(event.target.value);
         drawImage();
         saveState();
     }
 
-    function changeScale(factor) {
-        scale *= factor;
+    function updateScale(event) {
+        scale = parseFloat(event.target.value);
+        drawImage();
+        saveState();
+    }
+
+    function updateBgColor(event) {
+        bgColor = event.target.value;
         drawImage();
         saveState();
     }
@@ -151,37 +138,82 @@
         rotation = 0;
         scale = 1;
         filter = '';
+        bgColor = '#FFFFFF';
         crop = { x: 0, y: 0, width: image.width, height: image.height, enabled: false };
         drawImage();
         saveState();
     }
+
+    function handleDragOver(event) {
+    event.preventDefault(); // Prevent default behavior (Prevent file from being opened)
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    loadImageFromFile(file);
+}
+
+function loadImageFromFile(file) {
+    if (file && file.type.startsWith('image/')) {
+        image.src = URL.createObjectURL(file);
+        image.onload = setupImage;
+    }
+}
+
 </script>
 
 <input type="file" accept="image/*" on:change={loadImage}>
 <canvas bind:this={canvas}></canvas>
-<div>
-    <strong>Image Properties:</strong>
-    <p>Width: {imageProperties.width}px</p>
-    <p>Height: {imageProperties.height}px</p>
-    <p>Format: {imageProperties.format}</p>
+
+<div class="drop-area" on:dragover="{handleDragOver}" on:drop="{handleDrop}">
+    Drag and drop an image here
+</div>
+<div class="control-group">
+    <label for="rotationSlider">Rotation</label>
+    <input type="range" id="rotationSlider" min="-180" max="180" value="{rotation}" on:input="{updateRotation}">
+</div>
+<div class="control-group">
+    <label for="scaleSlider">Scale</label>
+    <input type="range" id="scaleSlider" min="0.1" max="2" step="0.1" value="{scale}" on:input="{updateScale}">
+</div>
+<div class="control-group">
+    <label for="bgColorPicker">Background Color</label>
+    <input type="color" id="bgColorPicker" value="{bgColor}" on:change="{updateBgColor}">
 </div>
 <button on:click={undo}>Undo</button>
 <button on:click={redo}>Redo</button>
-<button on:click={() => rotate(90)}>Rotate 90°</button>
-<button on:click={() => changeScale(1.1)}>Scale Up</button>
-<button on:click={() => changeScale(0.9)}>Scale Down</button>
 <button on:click={() => applyFilter('grayscale(100%)')}>Grayscale</button>
 <button on:click={() => applyFilter('sepia(100%)')}>Sepia</button>
 <button on:click={enableCrop}>Enable Crop</button>
 <button on:click={disableCrop}>Disable Crop</button>
-<button on:click={() => updateCrop(50, 50, 200, 200)}>Crop 200x200 from (50,50)</button>
-<button on:click={resetTransformations}>Reset</button>
+<button on:click={() => updateCrop(50, 50, 200, 200)}>Update Crop</button>
+<button on:click={resetTransformations}>Reset All</button>
 
 <style>
     canvas {
         border: 1px solid black;
-    }
-    div, button {
         margin-top: 10px;
     }
+    .control-group {
+        margin-top: 10px;
+    }
+
+
+    .drop-area {
+    border: 2px dashed #aaa; /* Dashed border */
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    color: #aaa;
+    font-size: 16px;
+    transition: border-color 0.3s, background-color 0.3s;
+    margin-top: 10px;
+}
+
+.drop-area:hover {
+    border-color: #666; /* Darker border on hover */
+    background-color: #f8f8f8; /* Light background on hover */
+}
+
 </style>
